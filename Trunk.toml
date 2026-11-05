@@ -1,0 +1,8 @@
+[build]
+target = "index.html"
+dist = "dist"
+public_url = "/print-fit/"
+# Stable file names, and replace trunk's default inline loader <script> with an external
+# one (web/boot.js), so the CSP can stay strict: script-src 'self' (no 'unsafe-inline').
+filehash = false
+pattern_script = "<script type=\"module\" src=\"{base}boot.js\"></script>"
