@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["crates/fit_core", "crates/fit_web"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/roscore/print-fit"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

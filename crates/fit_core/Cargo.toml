@@ -1,0 +1,11 @@
+[package]
+name = "fit_core"
+description = "Pure-Rust math for 3D-print fits, calibration and tolerance coupons"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

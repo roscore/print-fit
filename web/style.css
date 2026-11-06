@@ -1,0 +1,146 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --fg: #1d2330;
+  --muted: #5d6677;
+  --line: #d5dae3;
+  --accent: #2463eb;
+  --accent-fg: #ffffff;
+  --warn-bg: #fff6dd;
+  --warn-fg: #6b4e00;
+  --part: #c9d3e6;
+  --shaft: #8fb3f5;
+  --bad: #d43c3c;
+  --ok: #1d8a4c;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --card: #1b2029;
+    --fg: #e5e9f0;
+    --muted: #9aa4b5;
+    --line: #313847;
+    --accent: #6b9bff;
+    --accent-fg: #0b1020;
+    --warn-bg: #3a2f10;
+    --warn-fg: #f3d68a;
+    --part: #3b4659;
+    --shaft: #4a78c9;
+    --bad: #ff6b6b;
+    --ok: #4cc584;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 12px 16px 32px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+}
+
+h1 { margin: 0; font-size: 1.6rem; }
+h2 { margin: 0 0 8px; font-size: 1.2rem; }
+
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.tagline { margin: 2px 0 0; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+.warn {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+summary { cursor: pointer; font-weight: 600; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+.grid.two { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+label.check { flex-direction: row; align-items: center; gap: 8px; }
+
+input, select, textarea, button, .button {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  min-height: 38px;
+}
+textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
+input[type="checkbox"] { min-height: auto; width: 18px; height: 18px; }
+input:invalid { border-color: var(--bad); }
+
+button, .button { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+button:hover, .button:hover { border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+button.ghost { background: transparent; white-space: nowrap; flex: none; }
+
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+#share-url { width: 100%; margin-top: 4px; }
+.msg { min-height: 1.2em; margin: 6px 0 0; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--ok); }
+
+.tabs { display: flex; gap: 4px; overflow-x: auto; }
+.tab { border-radius: 8px 8px 0 0; background: transparent; white-space: nowrap; }
+.tab.active { background: var(--card); border-bottom-color: var(--card); font-weight: 600; }
+.panel { margin-top: -1px; border-top-left-radius: 0; }
+
+.result { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+#fit-out { flex: 1 1 280px; }
+.diagram { flex: 0 1 300px; width: 100%; max-width: 320px; }
+.diagram.wide { max-width: none; margin: 12px 0; overflow-x: auto; }
+.diagram svg { width: 100%; height: auto; display: block; }
+
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); padding: 5px 8px; text-align: left; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+.big { font-size: 1.15rem; font-weight: 700; }
+.notes { padding-left: 20px; }
+.notes li { margin: 4px 0; }
+
+/* SVG styling (inline SVG uses page CSS) */
+.svg-part { fill: var(--part); stroke: var(--fg); stroke-width: 1; }
+.svg-hole { fill: var(--card); stroke: var(--fg); stroke-width: 1.2; }
+.svg-shaft { fill: var(--shaft); stroke: var(--fg); stroke-width: 1.2; fill-opacity: 0.85; }
+.svg-overlap { fill: var(--bad); fill-opacity: 0.45; }
+.svg-dim { stroke: var(--bad); stroke-width: 1.2; fill: none; }
+.svg-text { fill: var(--fg); font-size: 11px; font-family: inherit; }
+.svg-text.small { font-size: 3px; }
+.svg-mark { fill: var(--accent); }
+.svg-plate { fill: var(--part); stroke: var(--fg); stroke-width: 0.2; }
+.svg-cphole { fill: var(--card); stroke: var(--fg); stroke-width: 0.2; }
+.svg-cppeg { fill: var(--shaft); stroke: var(--fg); stroke-width: 0.2; }
+
+footer { margin-top: 24px; text-align: center; }
+
+@media (max-width: 520px) {
+  body { padding: 8px 10px 24px; }
+  .card { padding: 10px 12px; }
+  .diagram { max-width: none; }
+}

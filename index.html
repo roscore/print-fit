@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="3D-print fit and tolerance calculator. Runs entirely in your browser.">
+  <title>print-fit — 3D print fit &amp; tolerance calculator</title>
+  <link rel="icon" href="data:,">
+  <link data-trunk rel="rust" href="crates/fit_web/Cargo.toml" data-bin="fit_web" data-wasm-opt="z">
+  <link data-trunk rel="css" href="web/style.css">
+  <link data-trunk rel="copy-file" href="web/boot.js">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>print-fit</h1>
+    <p class="tagline" data-i18n="tagline">Design parts that fit after 3D printing (FDM &amp; resin).</p>
+  </div>
+  <button type="button" id="lang-toggle" class="ghost" aria-label="Language">한국어</button>
+</header>
+
+<noscript><p class="warn">This app needs JavaScript and WebAssembly. Nothing is sent anywhere.</p></noscript>
+<p id="loading" class="muted">Loading…</p>
+
+<main id="app" hidden>
+  <p class="warn" data-i18n="disclaimer">All values are starting points. Test on your own printer and material.</p>
+
+  <details class="card" id="profile-card" open>
+    <summary><span data-i18n="profile_title">Printer profile</span>: <strong id="profile-summary"></strong></summary>
+    <div class="grid">
+      <label><span data-i18n="profile_active">Active profile</span>
+        <select id="profile-select"></select></label>
+      <label><span data-i18n="profile_name">Name</span>
+        <input id="pf-name" type="text" maxlength="60" autocomplete="off"></label>
+      <label><span data-i18n="process">Process preset</span>
+        <select id="pf-process">
+          <option value="fdm04" data-i18n="proc_fdm04">FDM, 0.4 mm nozzle</option>
+          <option value="fdm06" data-i18n="proc_fdm06">FDM, 0.6 mm nozzle</option>
+          <option value="resin_msla" data-i18n="proc_resin">Resin (MSLA)</option>
+        </select></label>
+      <label><span data-i18n="pf_hole">XY hole shrink (mm, diametral)</span>
+        <input id="pf-hole" type="number" step="any" inputmode="decimal"></label>
+      <label><span data-i18n="pf_pin">Pin/tab growth (mm, diametral)</span>
+        <input id="pf-pin" type="number" step="any" inputmode="decimal"></label>
+      <label><span data-i18n="pf_shrink">Material shrink (%)</span>
+        <input id="pf-shrink" type="number" step="any" inputmode="decimal"></label>
+      <label><span data-i18n="pf_ef">Elephant foot (mm per side, first layers)</span>
+        <input id="pf-ef" type="number" step="any" min="0" inputmode="decimal"></label>
+      <label><span data-i18n="pf_droop">Horizontal-hole droop (mm)</span>
+        <input id="pf-droop" type="number" step="any" min="0" inputmode="decimal"></label>
+    </div>
+    <div class="buttons">
+      <button type="button" id="pf-new" data-i18n="pf_new">Duplicate as new</button>
+      <button type="button" id="pf-reset" data-i18n="pf_reset">Reset to preset</button>
+      <button type="button" id="pf-delete" data-i18n="pf_delete">Delete</button>
+      <button type="button" id="pf-export" data-i18n="pf_export">Export JSON</button>
+      <label class="button"><span data-i18n="pf_import">Import JSON</span>
+        <input id="pf-import-file" type="file" accept="application/json,.json" hidden></label>
+      <button type="button" id="pf-share" data-i18n="pf_share">Share link</button>
+    </div>
+    <input id="share-url" type="text" readonly hidden aria-label="Share URL">
+    <p class="muted small" data-i18n="pf_privacy">Profiles are stored only in this browser (localStorage). Share links keep the settings in the URL fragment (#p=…), which browsers never send to a server.</p>
+    <p id="pf-msg" class="msg" role="status"></p>
+  </details>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab active" data-tab="fit" role="tab" data-i18n="tab_fit">Fit</button>
+    <button type="button" class="tab" data-tab="calib" role="tab" data-i18n="tab_calib">Calibrate</button>
+    <button type="button" class="tab" data-tab="coupon" role="tab" data-i18n="tab_coupon">Test coupon</button>
+    <button type="button" class="tab" data-tab="screws" role="tab" data-i18n="tab_screws">Screws</button>
+  </nav>
+
+  <section id="tab-fit" class="card panel">
+    <h2 data-i18n="fit_title">Fit calculator</h2>
+    <div class="grid">
+      <label><span data-i18n="fit_nominal">Nominal diameter / width (mm)</span>
+        <input id="fit-nominal" type="number" step="any" min="0.1" value="8" inputmode="decimal"></label>
+      <label><span data-i18n="fit_feature">Feature</span>
+        <select id="fit-feature">
+          <option value="round" data-i18n="feat_round">Round hole + pin/shaft</option>
+          <option value="slot" data-i18n="feat_slot">Square slot + tab</option>
+        </select></label>
+      <label><span data-i18n="fit_class">Fit class</span>
+        <select id="fit-class">
+          <option value="press" data-i18n="cls_press">Press</option>
+          <option value="snug" data-i18n="cls_snug">Snug</option>
+          <option value="slide" data-i18n="cls_slide" selected>Slide</option>
+          <option value="loose" data-i18n="cls_loose">Loose</option>
+          <option value="free_spin" data-i18n="cls_free_spin">Free spin</option>
+        </select></label>
+      <label><span data-i18n="fit_datum">Which parts are printed?</span>
+        <select id="fit-datum">
+          <option value="split" data-i18n="datum_split">Both printed (split clearance)</option>
+          <option value="shaft_fixed" data-i18n="datum_shaft_fixed">Shaft is a bought part (e.g. steel pin)</option>
+          <option value="hole_fixed" data-i18n="datum_hole_fixed">Hole is a bought part (e.g. bearing bore)</option>
+        </select></label>
+      <label class="check"><input id="fit-facet" type="checkbox">
+        <span data-i18n="fit_facet">Faceted hole correction (exported as N-sided polygon)</span></label>
+      <label><span data-i18n="fit_segments">Polygon segments N</span>
+        <input id="fit-segments" type="number" min="3" max="512" step="1" value="32" inputmode="numeric"></label>
+    </div>
+    <div class="result">
+      <div id="fit-out"></div>
+      <div id="fit-diagram" class="diagram" aria-hidden="true"></div>
+    </div>
+    <p id="fit-explain"></p>
+    <ul id="fit-notes" class="notes"></ul>
+  </section>
+
+  <section id="tab-calib" class="card panel" hidden>
+    <h2 data-i18n="cal_title">Calibration from a test print</h2>
+    <p class="muted" data-i18n="cal_help">Print a few holes and pins of known CAD size, measure them with calipers and enter one pair per line: CAD size, measured size.</p>
+    <div class="grid two">
+      <label><span data-i18n="cal_holes">Holes (CAD measured)</span>
+        <textarea id="cal-holes" rows="6" spellcheck="false" placeholder="5.0 4.82&#10;8.0 7.83&#10;10.0 9.81"></textarea></label>
+      <label><span data-i18n="cal_pins">Pins (CAD measured)</span>
+        <textarea id="cal-pins" rows="6" spellcheck="false" placeholder="5.0 5.06&#10;8.0 8.05&#10;10.0 10.04"></textarea></label>
+    </div>
+    <div id="cal-out"></div>
+    <div class="buttons">
+      <button type="button" id="cal-example" data-i18n="cal_example">Fill example data</button>
+      <button type="button" id="cal-apply" class="primary" data-i18n="cal_apply" disabled>Apply to profile</button>
+    </div>
+    <p id="cal-msg" class="msg" role="status"></p>
+  </section>
+
+  <section id="tab-coupon" class="card panel" hidden>
+    <h2 data-i18n="cp_title">Tolerance test coupon (STL)</h2>
+    <p class="muted" data-i18n="cp_help">A plate with a row of holes (or pegs) stepping the clearance. Each step is marked by bumps: a bar counts 5, a dot counts 1. Sizes are raw CAD sizes, not compensated.</p>
+    <div class="grid">
+      <label><span data-i18n="cp_kind">Coupon type</span>
+        <select id="cp-kind">
+          <option value="holes" data-i18n="cp_holes">Holes (test with a pin of nominal size)</option>
+          <option value="pegs" data-i18n="cp_pegs">Pegs (test with a hole of nominal size)</option>
+        </select></label>
+      <label><span data-i18n="cp_nominal">Nominal (mm)</span>
+        <input id="cp-nominal" type="number" step="any" value="5" inputmode="decimal"></label>
+      <label><span data-i18n="cp_start">Clearance from (mm)</span>
+        <input id="cp-start" type="number" step="any" value="-0.1" inputmode="decimal"></label>
+      <label><span data-i18n="cp_end">Clearance to (mm)</span>
+        <input id="cp-end" type="number" step="any" value="0.5" inputmode="decimal"></label>
+      <label><span data-i18n="cp_step">Step (mm)</span>
+        <input id="cp-step" type="number" step="any" min="0.01" value="0.1" inputmode="decimal"></label>
+      <label><span data-i18n="cp_thick">Plate thickness (mm)</span>
+        <input id="cp-thick" type="number" step="any" value="3" inputmode="decimal"></label>
+      <label><span data-i18n="cp_peg_h">Peg height (mm)</span>
+        <input id="cp-peg-h" type="number" step="any" value="6" inputmode="decimal"></label>
+      <label><span data-i18n="cp_wall">Wall between features (mm)</span>
+        <input id="cp-wall" type="number" step="any" value="2.5" inputmode="decimal"></label>
+      <label><span data-i18n="cp_seg">Segments per circle</span>
+        <input id="cp-seg" type="number" step="any" min="12" max="256" value="48" inputmode="numeric"></label>
+    </div>
+    <div id="cp-preview" class="diagram wide"></div>
+    <p id="cp-info"></p>
+    <div class="buttons">
+      <button type="button" id="cp-download" class="primary" data-i18n="cp_download">Download STL</button>
+    </div>
+  </section>
+
+  <section id="tab-screws" class="card panel" hidden>
+    <h2 data-i18n="sc_title">Metric screw cheat sheet</h2>
+    <p class="warn small" data-i18n="sc_warn">Typical values only — starting points to test. Heat-set insert holes vary by insert brand: check the datasheet.</p>
+    <div class="scroll"><table id="screw-table"></table></div>
+    <p class="muted small" data-i18n="sc_note">Self-tap, clearance and insert holes are CAD sizes; add your hole compensation if needed. Nut trap sizes already include the profile's hole compensation plus a small clearance.</p>
+  </section>
+</main>
+
+<footer>
+  <p class="small muted" data-i18n="footer">Open source (MIT). Runs 100% in your browser: no tracking, no server, no network requests.</p>
+</footer>
+</body>
+</html>
